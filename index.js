@@ -1,9 +1,9 @@
-const config = require('./config/config.json');
+const config = require('./config/config.json'),
+      CommandLine = require('./util/commandline');
 
 const uws = require('uws'),
-      promptSync = require('prompt-sync')();
-
-const conn = new uws(`ws://${promptSync('Host: ', config.host)}`);
+      promptSync = require('prompt-sync')(),
+      prompt = require('prompt-promise');
 
 const data = {
 	isConnected: false,
@@ -11,69 +11,117 @@ const data = {
 	protocol: 'none'
 };
 
-conn.on('open', async () => {
-	data.isConnected = true;
-});
+CommandLine.requestLine('Host: ');
+prompt('').then((host) => {
+	const conn = new uws(`ws://${host}`);
 
-conn.on('close', async () => {
-	console.log('Connection Closed');
-});
+	conn.on('open', async () => {
+		data.isConnected = true;
+	});
 
-conn.on('message', async (message) => {
-	message = JSON.parse(message);
-	switch(message.type) {
-		// All protocols support this stuff the same
-		case 'protocol':
-			data.protocol = message.response;
+	conn.on('close', async () => {
+		CommandLine.clearLine();
+		CommandLine.printLine('Connection Closed');
+		console.log('\n');
+		process.exit(0);
+	});
 
-			sendMessage('auth', {
-				username: promptSync('username: ', config.username),
-				password: promptSync.hide('password: ', )
-			});
-			break;
-		case 'auth':
-			if (message.response.success) {
-				data.isLoggedIn = true;
-				console.log('Connected to Incheon');
-			} else if(message.response.needs.includes('twoFactor')) {
-				sendMessage('twofactor', {
-					code: promptSync('twofactor authorization code: ', '')
+	conn.on('message', async (message) => {
+		message = JSON.parse(message);
+		switch(message.type) {
+			// All protocols support this stuff the same
+			case 'protocol':
+				data.protocol = message.response;
+
+
+				CommandLine.requestLine('username: ');
+				const username = await prompt('');
+
+				CommandLine.requestLine('password: ');
+				const password = await prompt.password('');
+
+				sendMessage('auth', {
+					username,
+					password
 				});
-			}
-			break;
-		case 'message':
-			console.log(message.response);
-			break;
-		case 'error':
-			console.log(message.response);
-			break;
-		case 'ping':
-			conn.send('pong');
-			break;
 
-		// Protocol specific commands
-		default:
-			switch(data.protocol) {
-				case 'none':
-					break;
-				case 'incheon-v1':
-					break;
-				case 'incheon-recovery':
-					switch(message) {
-						case 'servererror':
-							console.log(message.response);
-							break;
+				CommandLine.printLine('Logging in...');
+				break;
+			case 'auth':
+				if (message.response.success) {
+					data.isLoggedIn = true;
+					if (data.protocol.startsWith('incheon-v')) {
+						CommandLine.printLine('Connected to Incheon');
+						CommandLine.requestLine('Incheon> ');
+						await runCommand(await prompt(''));
+					} else {
+						CommandLine.printLine('Connected to Incheon-Recovery');
+						CommandLine.requestLine('Recovery> ');
+						await runCommand(await prompt(''));
 					}
-					break;
+				} else if(message.response.needs.includes('twoFactor')) {
+					sendMessage('twofactor', {
+						code: promptSync('twofactor authorization code: ', '')
+					});
+				}
+				break;
+			case 'message':
+				CommandLine.printLine(message.response);
+				CommandLine.printLine('');
+				break;
+			case 'error':
+				CommandLine.printLine(message.response);
+				break;
+			case 'ping':
+				conn.send('pong');
+				break;
+
+			// Protocol specific commands
+			default:
+				switch(data.protocol) {
+					case 'none':
+						break;
+					case 'incheon-v1':
+						break;
+					case 'incheon-recovery':
+						switch(message) {
+							case 'servererror':
+								CommandLine.printLine(message.response);
+								break;
+						}
+						break;
+				}
+				break;
+		}
+	});
+
+	async function promptLoop() {
+		if (data.isLoggedIn) {
+			if (data.protocol.startsWith('incheon-v')) {
+				CommandLine.requestLine('Incheon> ');
+				await runCommand(await prompt(''));
+			} else {
+				CommandLine.requestLine('Recovery> ');
+				await runCommand(await prompt(''));
 			}
-			break;
+		}
+	}
+
+	async function runCommand(command) {
+		command = command.split(' ');
+		if (command[0] === 'exit') {
+			conn.close();
+		} else {
+			sendMessage(command.shift(), command.join(' '));
+			await promptLoop();
+		}
+	}
+
+	function sendMessage(type, request) {
+		if (data.isConnected)
+			conn.send(JSON.stringify({
+				type,
+				request
+			}));
 	}
 });
-
-function sendMessage(type, request) {
-	if (data.isConnected)
-		conn.send(JSON.stringify({
-			type,
-			request
-		}));
-}
