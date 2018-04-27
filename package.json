@@ -1,0 +1,27 @@
+{
+  "name": "incheon-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "colors": "^1.2.1",
+    "promise-sync": "^1.1.7",
+    "prompt-promise": "^1.0.3",
+    "prompt-sync": "^4.1.6",
+    "uws": "^9.148.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bob620/Incheon-Client.git"
+  },
+  "author": "bob620",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Bob620/Incheon-Client/issues"
+  },
+  "homepage": "https://github.com/Bob620/Incheon-Client#readme"
+}

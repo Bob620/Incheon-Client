@@ -2,7 +2,6 @@ const config = require('./config/config.json'),
       CommandLine = require('./util/commandline');
 
 const uws = require('uws'),
-      promptSync = require('prompt-sync')(),
       prompt = require('prompt-promise');
 
 const data = {
@@ -51,17 +50,19 @@ prompt('').then((host) => {
 				if (message.response.success) {
 					data.isLoggedIn = true;
 					if (data.protocol.startsWith('incheon-v')) {
-						CommandLine.printLine('Connected to Incheon');
-						CommandLine.requestLine('Incheon> ');
-						await runCommand(await prompt(''));
+						CommandLine.printLine('Logged into Incheon');
+						await promptLoop();
 					} else {
-						CommandLine.printLine('Connected to Incheon-Recovery');
-						CommandLine.requestLine('Recovery> ');
-						await runCommand(await prompt(''));
+						CommandLine.printLine('Logged into Incheon-Recovery');
+						await promptLoop();
 					}
 				} else if(message.response.needs.includes('twoFactor')) {
+
+					CommandLine.requestLine('twofactor authorization code: ');
+					const code = await prompt('');
+
 					sendMessage('twofactor', {
-						code: promptSync('twofactor authorization code: ', '')
+						code
 					});
 				}
 				break;
