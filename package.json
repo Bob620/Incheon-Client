@@ -5,9 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "colors": "^1.2.1",
-    "promise-sync": "^1.1.7",
     "prompt-promise": "^1.0.3",
-    "prompt-sync": "^4.1.6",
     "uws": "^9.148.0"
   },
   "devDependencies": {},
