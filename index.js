@@ -25,7 +25,7 @@ prompt('').then((host) => {
 		process.exit(0);
 	});
 
-	conn.on('message', async (message) => {
+	conn.on('message', async message => {
 		message = JSON.parse(message);
 		switch(message.type) {
 			// All protocols support this stuff the same
@@ -74,7 +74,10 @@ prompt('').then((host) => {
 				CommandLine.printLine(message.response);
 				break;
 			case 'ping':
-				conn.send('pong');
+				sendMessage('pong', {});
+				break;
+			case 'pong':
+				CommandLine.printLine('pong');
 				break;
 
 			// Protocol specific commands
