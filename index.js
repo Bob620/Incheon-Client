@@ -113,12 +113,12 @@ prompt('').then((host) => {
 
 	async function runCommand(command) {
 		command = command.split(' ');
-		if (command[0] === 'exit') {
-			conn.close();
-		} else {
+//		if (command[0] === 'exit') {
+//			conn.close();
+//		} else {
 			sendMessage(command.shift(), command.join(' '));
 			await promptLoop();
-		}
+//		}
 	}
 
 	function sendMessage(type, request) {
